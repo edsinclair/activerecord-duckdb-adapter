@@ -238,4 +238,64 @@ RSpec.describe "DuckDB SchemaStatements" do
       expect(@connection.indexes(:test_rm_idx)).to be_empty
     end
   end
+
+  describe "#change_column_default" do
+    before(:each) { @connection.execute("CREATE TABLE test_alter (name VARCHAR, status VARCHAR DEFAULT 'active')") }
+    after(:each) { @connection.execute("DROP TABLE IF EXISTS test_alter") }
+
+    it "sets a new default value" do
+      @connection.change_column_default(:test_alter, :status, "inactive")
+      @connection.execute("INSERT INTO test_alter (name) VALUES ('test')")
+      expect(@connection.select_value("SELECT status FROM test_alter")).to eq("inactive")
+    end
+
+    it "drops default value" do
+      @connection.change_column_default(:test_alter, :status, nil)
+      @connection.execute("INSERT INTO test_alter (name) VALUES ('test')")
+      expect(@connection.select_value("SELECT status FROM test_alter")).to be_nil
+    end
+  end
+
+  describe "#change_column_null" do
+    before(:each) { @connection.execute("CREATE TABLE test_null (name VARCHAR)") }
+    after(:each) { @connection.execute("DROP TABLE IF EXISTS test_null") }
+
+    it "adds NOT NULL constraint" do
+      @connection.change_column_null(:test_null, :name, false)
+      expect {
+        @connection.execute("INSERT INTO test_null (name) VALUES (NULL)")
+      }.to raise_error(ActiveRecord::NotNullViolation)
+    end
+
+    it "removes NOT NULL constraint" do
+      @connection.execute("ALTER TABLE test_null ALTER COLUMN name SET NOT NULL")
+      @connection.change_column_null(:test_null, :name, true)
+      expect {
+        @connection.execute("INSERT INTO test_null (name) VALUES (NULL)")
+      }.not_to raise_error
+    end
+  end
+
+  describe "#rename_column" do
+    before(:each) { @connection.execute("CREATE TABLE test_rename_col (old_name VARCHAR)") }
+    after(:each) { @connection.execute("DROP TABLE IF EXISTS test_rename_col") }
+
+    it "renames column" do
+      @connection.rename_column(:test_rename_col, :old_name, :new_name)
+      column_names = @connection.columns(:test_rename_col).map(&:name)
+      expect(column_names).to include("new_name")
+      expect(column_names).not_to include("old_name")
+    end
+  end
+
+  describe "#change_column" do
+    before(:each) { @connection.execute("CREATE TABLE test_change_type (val INTEGER)") }
+    after(:each) { @connection.execute("DROP TABLE IF EXISTS test_change_type") }
+
+    it "changes column type" do
+      @connection.change_column(:test_change_type, :val, :string)
+      col = @connection.columns(:test_change_type).find { |c| c.name == "val" }
+      expect(col.type).to eq(:string)
+    end
+  end
 end

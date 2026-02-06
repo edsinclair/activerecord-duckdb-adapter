@@ -44,6 +44,34 @@ module ActiveRecord
           execute("DROP INDEX #{quote_column_name(index_name)}")
         end
 
+        def change_column_default(table_name, column_name, default_or_changes)
+          default = extract_new_default_value(default_or_changes)
+          if default.nil?
+            execute("ALTER TABLE #{quote_table_name(table_name)} ALTER COLUMN #{quote_column_name(column_name)} DROP DEFAULT")
+          else
+            execute("ALTER TABLE #{quote_table_name(table_name)} ALTER COLUMN #{quote_column_name(column_name)} SET DEFAULT #{quote(default)}")
+          end
+        end
+
+        def change_column_null(table_name, column_name, null, default = nil)
+          if null
+            execute("ALTER TABLE #{quote_table_name(table_name)} ALTER COLUMN #{quote_column_name(column_name)} DROP NOT NULL")
+          else
+            execute("ALTER TABLE #{quote_table_name(table_name)} ALTER COLUMN #{quote_column_name(column_name)} SET NOT NULL")
+          end
+        end
+
+        def rename_column(table_name, column_name, new_column_name)
+          execute("ALTER TABLE #{quote_table_name(table_name)} RENAME COLUMN #{quote_column_name(column_name)} TO #{quote_column_name(new_column_name)}")
+        end
+
+        def change_column(table_name, column_name, type, **options)
+          sql_type = type_to_sql(type, **options.slice(:limit, :precision, :scale))
+          execute("ALTER TABLE #{quote_table_name(table_name)} ALTER COLUMN #{quote_column_name(column_name)} SET DATA TYPE #{sql_type}")
+          change_column_default(table_name, column_name, options[:default]) if options.key?(:default)
+          change_column_null(table_name, column_name, options[:null]) if options.key?(:null)
+        end
+
         private
 
         def column_definitions(table_name)
