@@ -72,4 +72,46 @@ RSpec.describe "DuckDB SchemaStatements" do
       expect(columns.find { |c| c.name == "name" }.type).to eq(:string)
     end
   end
+
+  describe "#primary_keys" do
+    after(:each) do
+      @connection.execute("DROP TABLE IF EXISTS test_pk")
+      @connection.execute("DROP TABLE IF EXISTS test_no_pk")
+      @connection.execute("DROP TABLE IF EXISTS test_composite_pk")
+    end
+
+    it "returns primary key for single column" do
+      @connection.execute("CREATE TABLE test_pk (id INTEGER PRIMARY KEY, name VARCHAR)")
+      expect(@connection.primary_keys("test_pk")).to eq(["id"])
+    end
+
+    it "returns empty array for table without primary key" do
+      @connection.execute("CREATE TABLE test_no_pk (id INTEGER, name VARCHAR)")
+      expect(@connection.primary_keys("test_no_pk")).to eq([])
+    end
+
+    it "returns multiple columns for composite primary key" do
+      @connection.execute("CREATE TABLE test_composite_pk (id1 INTEGER, id2 INTEGER, PRIMARY KEY (id1, id2))")
+      expect(@connection.primary_keys("test_composite_pk")).to contain_exactly("id1", "id2")
+    end
+  end
+
+  describe "#views" do
+    before(:each) do
+      @connection.execute("CREATE TABLE test_base (id INTEGER)")
+      @connection.execute("CREATE VIEW test_view AS SELECT * FROM test_base")
+    end
+    after(:each) do
+      @connection.execute("DROP VIEW IF EXISTS test_view")
+      @connection.execute("DROP TABLE IF EXISTS test_base")
+    end
+
+    it "returns list of views" do
+      expect(@connection.views).to include("test_view")
+    end
+
+    it "excludes tables from views list" do
+      expect(@connection.views).not_to include("test_base")
+    end
+  end
 end
