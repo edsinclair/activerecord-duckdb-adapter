@@ -36,6 +36,7 @@ module ActiveRecord
       NATIVE_DATABASE_TYPES = {
         primary_key:  "INTEGER PRIMARY KEY",
         string:       { name: "VARCHAR" },
+        text:         { name: "VARCHAR" },
         integer:      { name: "INTEGER" },
         float:        { name: "REAL" },
         decimal:      { name: "DECIMAL" },
@@ -46,6 +47,7 @@ module ActiveRecord
         binary:       { name: "BLOB" },
         boolean:      { name: "BOOLEAN" },
         uuid:         { name: "UUID" },
+        json:         { name: "JSON" },
       }
 
       def native_database_types

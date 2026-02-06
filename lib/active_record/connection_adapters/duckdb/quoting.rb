@@ -68,19 +68,19 @@ module ActiveRecord
         end
 
         def quoted_true
-          "1"
+          "TRUE"
         end
 
         def unquoted_true
-          1
+          true
         end
 
         def quoted_false
-          "0"
+          "FALSE"
         end
 
         def unquoted_false
-          0
+          false
         end
 
         def quote_default_expression(value, column) # :nodoc:
