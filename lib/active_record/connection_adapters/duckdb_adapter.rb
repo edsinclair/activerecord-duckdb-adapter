@@ -1,0 +1,98 @@
+# frozen_string_literal: true
+
+require "active_record/connection_adapters/duckdb/database_statements"
+require "active_record/connection_adapters/duckdb/schema_statements"
+
+module ActiveRecord
+  module ConnectionAdapters # :nodoc:
+    # = Active Record DuckDB Adapter
+    #
+    # The DuckDB adapter works with the sqlite3-ruby drivers
+    # (available as gem from https://rubygems.org/gems/sqlite3).
+    #
+    # Options:
+    #
+    # * <tt>:database</tt> - Path to the database file.
+    class DuckdbAdapter < AbstractAdapter
+      ADAPTER_NAME = "DuckDB"
+
+      class << self
+        def new_client(config)
+          ::DuckDB::Database.open(config[:database].to_s, config)
+        rescue Errno::ENOENT => e
+          raise ActiveRecord::NoDatabaseError if e.message.include?("No such file or directory")
+
+          raise
+        end
+
+        def dbconsole(config, options = {})
+          args = []
+
+          args << "-#{options[:mode]}" if options[:mode]
+          args << "-header" if options[:header]
+          args << File.expand_path(config.database, Rails.respond_to?(:root) ? Rails.root : nil)
+
+          find_cmd_and_exec(ActiveRecord.database_cli[:sqlite], *args)
+        end
+      end
+
+      include Duckdb::DatabaseStatements
+      include Duckdb::SchemaStatements
+
+      NATIVE_DATABASE_TYPES = {
+        primary_key:  "INTEGER PRIMARY KEY",
+        string:       { name: "VARCHAR" },
+        integer:      { name: "INTEGER" },
+        float:        { name: "REAL" },
+        decimal:      { name: "DECIMAL" },
+        datetime:     { name: "TIMESTAMP" },
+        time:         { name: "TIME" },
+        date:         { name: "DATE" },
+        bigint:       { name: "BIGINT" },
+        binary:       { name: "BLOB" },
+        boolean:      { name: "BOOLEAN" },
+        uuid:         { name: "UUID" },
+      }
+
+      def native_database_types
+        NATIVE_DATABASE_TYPES
+      end
+
+      def primary_keys(table_name) # :nodoc:
+        raise ArgumentError unless table_name.present?
+
+        results = query("PRAGMA table_info(#{table_name})", "SCHEMA")
+        results.each_with_object([]) do |result, keys|
+          _cid, name, _type, _notnull, _dflt_value, pk = result
+          keys << name if pk
+        end
+      end
+
+      def begin_transaction(isolation: nil, joinable: true, _lazy: true); end
+
+      private
+        def execute_and_clear(sql, name, binds, prepare: false, async: false)
+          sql = transform_query(sql)
+          check_if_write_query(sql)
+          type_casted_binds = type_casted_binds(binds)
+
+          log(sql, name, binds, type_casted_binds, async: async) do
+            ActiveSupport::Dependencies.interlock.permit_concurrent_loads do
+              # TODO: prepare の有無でcacheするっぽい？
+              if without_prepared_statement?(binds)
+                @connection.query(sql)
+              else
+                @connection.query(sql, *type_casted_binds)
+              end
+            end
+          end
+        end
+
+        def column_definitions(table_name) # :nodoc:
+          execute("PRAGMA table_info('#{quote_table_name(table_name)}')", "SCHEMA") do |result|
+            each_hash(result)
+          end
+        end
+    end
+  end
+end
