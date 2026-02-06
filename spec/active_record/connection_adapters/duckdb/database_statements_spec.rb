@@ -96,4 +96,28 @@ RSpec.describe "DuckDB DatabaseStatements" do
       expect(result).to eq(["Alice", "Bob"])
     end
   end
+
+  describe "data modification" do
+    describe "#update" do
+      after(:each) { @connection.execute("DROP TABLE IF EXISTS test_update") }
+
+      it "updates rows and returns affected count" do
+        @connection.execute("CREATE TABLE test_update (id INTEGER, name VARCHAR)")
+        @connection.execute("INSERT INTO test_update VALUES (1, 'Old')")
+        count = @connection.update("UPDATE test_update SET name = 'New' WHERE id = 1")
+        expect(count).to eq(1)
+      end
+    end
+
+    describe "#delete" do
+      after(:each) { @connection.execute("DROP TABLE IF EXISTS test_delete") }
+
+      it "deletes rows and returns affected count" do
+        @connection.execute("CREATE TABLE test_delete (id INTEGER, name VARCHAR)")
+        @connection.execute("INSERT INTO test_delete VALUES (1, 'Test')")
+        count = @connection.delete("DELETE FROM test_delete WHERE id = 1")
+        expect(count).to eq(1)
+      end
+    end
+  end
 end
