@@ -7,33 +7,25 @@ module ActiveRecord
   module ConnectionAdapters # :nodoc:
     # = Active Record DuckDB Adapter
     #
-    # The DuckDB adapter works with the sqlite3-ruby drivers
-    # (available as gem from https://rubygems.org/gems/sqlite3).
-    #
     # Options:
     #
-    # * <tt>:database</tt> - Path to the database file.
+    # * <tt>:database</tt> - Path to the database file, or ":memory:" for in-memory.
     class DuckdbAdapter < AbstractAdapter
       ADAPTER_NAME = "DuckDB"
 
       class << self
         def new_client(config)
-          ::DuckDB::Database.open(config[:database].to_s, config)
-        rescue Errno::ENOENT => e
-          raise ActiveRecord::NoDatabaseError if e.message.include?("No such file or directory")
-
-          raise
+          db = ::DuckDB::Database.open(config[:database].to_s)
+          db.connect
         end
+      end
 
-        def dbconsole(config, options = {})
-          args = []
-
-          args << "-#{options[:mode]}" if options[:mode]
-          args << "-header" if options[:header]
-          args << File.expand_path(config.database, Rails.respond_to?(:root) ? Rails.root : nil)
-
-          find_cmd_and_exec(ActiveRecord.database_cli[:sqlite], *args)
-        end
+      def initialize(...)
+        super
+        @last_affected_rows = nil
+        @connection_parameters = @config.merge(
+          database: @config[:database].to_s
+        )
       end
 
       include Duckdb::DatabaseStatements
@@ -58,6 +50,23 @@ module ActiveRecord
         NATIVE_DATABASE_TYPES
       end
 
+      def connected?
+        !@raw_connection.nil?
+      end
+
+      def active?
+        if connected?
+          verified!
+          true
+        end
+      end
+
+      def disconnect!
+        super
+
+        @raw_connection = nil
+      end
+
       def primary_keys(table_name) # :nodoc:
         raise ArgumentError unless table_name.present?
 
@@ -68,29 +77,18 @@ module ActiveRecord
         end
       end
 
-      def begin_transaction(isolation: nil, joinable: true, _lazy: true); end
-
       private
-        def execute_and_clear(sql, name, binds, prepare: false, async: false)
-          sql = transform_query(sql)
-          check_if_write_query(sql)
-          type_casted_binds = type_casted_binds(binds)
-
-          log(sql, name, binds, type_casted_binds, async: async) do
-            ActiveSupport::Dependencies.interlock.permit_concurrent_loads do
-              # TODO: prepare の有無でcacheするっぽい？
-              if without_prepared_statement?(binds)
-                @connection.query(sql)
-              else
-                @connection.query(sql, *type_casted_binds)
-              end
-            end
-          end
+        def connect
+          @raw_connection = self.class.new_client(@connection_parameters)
+        rescue ConnectionNotEstablished => ex
+          raise ex.set_pool(@pool)
         end
 
-        def column_definitions(table_name) # :nodoc:
-          execute("PRAGMA table_info('#{quote_table_name(table_name)}')", "SCHEMA") do |result|
-            each_hash(result)
+        def reconnect
+          if active?
+            # DuckDB doesn't have a rollback on the connection level outside transactions
+          else
+            connect
           end
         end
     end

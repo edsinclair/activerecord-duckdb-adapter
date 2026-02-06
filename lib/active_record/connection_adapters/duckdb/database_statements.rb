@@ -5,38 +5,52 @@ module ActiveRecord
     module Duckdb
       module DatabaseStatements # :nodoc:
         def write_query?(sql) # :nodoc:
-          false
+          !READ_QUERY.match?(sql)
+        rescue ArgumentError # Invalid encoding
+          !READ_QUERY.match?(sql.b)
         end
+
+        READ_QUERY = ActiveRecord::ConnectionAdapters::AbstractAdapter.build_read_query_regexp(
+          :pragma
+        ) # :nodoc:
+        private_constant :READ_QUERY
 
         def execute(sql, name = nil) # :nodoc:
-          sql = transform_query(sql)
-
-          log(sql, name) do
-            ActiveSupport::Dependencies.interlock.permit_concurrent_loads do
-              @connection.query(sql)
-            end
-          end
-        end
-
-        def exec_query(sql, name = nil, binds = [], prepare: false, async: false) # :nodoc:
-          result = execute_and_clear(sql, name, binds, prepare: prepare, async: async)
-
-          # TODO: https://github.com/suketa/ruby-duckdb/issues/168
-          build_result(columns: result.columns, rows: result.to_a)
-          if result.to_a.first&.size == 1
-            build_result(columns: ['count'], rows: result.to_a)
-          elsif result.to_a.first&.size == 2
-            build_result(columns: ['id', 'name'], rows: result.to_a)
-          else
-            build_result(columns: ['id', 'author', 'title', 'body', 'count'], rows: result.to_a)
-          end
+          super&.to_a
         end
 
         def exec_delete(sql, name = nil, binds = []) # :nodoc:
-          result = execute_and_clear(sql, name, binds)
-          result.rows_changed
+          result = internal_exec_query(sql, name, binds)
+          @last_affected_rows
         end
         alias :exec_update :exec_delete
+
+        private
+          def perform_query(raw_connection, sql, binds, type_casted_binds, prepare:, notification_payload:, batch: false)
+            result = if binds.nil? || binds.empty?
+              raw_connection.query(sql)
+            else
+              raw_connection.query(sql, *type_casted_binds)
+            end
+
+            columns = result.columns.map(&:to_s)
+            rows = result.to_a
+
+            ar_result = ActiveRecord::Result.new(columns, rows)
+            @last_affected_rows = result.respond_to?(:rows_changed) ? result.rows_changed : 0
+            verified!
+
+            notification_payload[:row_count] = ar_result.length
+            ar_result
+          end
+
+          def cast_result(result)
+            result
+          end
+
+          def affected_rows(result)
+            @last_affected_rows
+          end
       end
     end
   end
