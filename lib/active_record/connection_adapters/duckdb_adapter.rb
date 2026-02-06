@@ -69,6 +69,41 @@ module ActiveRecord
         true
       end
 
+      def supports_ddl_transactions?
+        true
+      end
+
+      def supports_foreign_keys?
+        true
+      end
+
+      def supports_check_constraints?
+        true
+      end
+
+      def supports_views?
+        true
+      end
+
+      def supports_explain?
+        true
+      end
+
+      def supports_json?
+        true
+      end
+
+      def supports_savepoints?
+        false
+      end
+
+      def supports_insert_on_conflict?
+        true
+      end
+      alias supports_insert_on_duplicate_skip? supports_insert_on_conflict?
+      alias supports_insert_on_duplicate_update? supports_insert_on_conflict?
+      alias supports_insert_conflict_target? supports_insert_on_conflict?
+
       def disconnect!
         super
 

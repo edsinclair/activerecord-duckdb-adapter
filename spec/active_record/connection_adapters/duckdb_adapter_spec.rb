@@ -22,6 +22,20 @@ RSpec.describe ActiveRecord::ConnectionAdapters::DuckdbAdapter do
     )
   end
 
+  describe "feature support" do
+    let(:connection) { ActiveRecord::Base.connection }
+
+    it { expect(connection.supports_ddl_transactions?).to be true }
+    it { expect(connection.supports_foreign_keys?).to be true }
+    it { expect(connection.supports_check_constraints?).to be true }
+    it { expect(connection.supports_views?).to be true }
+    it { expect(connection.supports_explain?).to be true }
+    it { expect(connection.supports_json?).to be true }
+    it { expect(connection.supports_savepoints?).to be false }
+    it { expect(connection.supports_insert_on_conflict?).to be true }
+    it { expect(connection.supports_concurrent_connections?).to be true }
+  end
+
   describe "error translation" do
     before(:each) do
       @connection = ActiveRecord::Base.connection
