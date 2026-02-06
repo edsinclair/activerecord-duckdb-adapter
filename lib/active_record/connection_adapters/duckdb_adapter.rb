@@ -1,7 +1,12 @@
 # frozen_string_literal: true
 
+require "active_record/connection_adapters/duckdb/column"
 require "active_record/connection_adapters/duckdb/database_statements"
+require "active_record/connection_adapters/duckdb/explain_pretty_printer"
 require "active_record/connection_adapters/duckdb/quoting"
+require "active_record/connection_adapters/duckdb/schema_creation"
+require "active_record/connection_adapters/duckdb/schema_definitions"
+require "active_record/connection_adapters/duckdb/schema_dumper"
 require "active_record/connection_adapters/duckdb/schema_statements"
 
 module ActiveRecord

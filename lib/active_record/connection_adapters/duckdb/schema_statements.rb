@@ -72,7 +72,15 @@ module ActiveRecord
           change_column_null(table_name, column_name, options[:null]) if options.key?(:null)
         end
 
+        def schema_creation # :nodoc:
+          Duckdb::SchemaCreation.new(self)
+        end
+
         private
+
+        def create_table_definition(name, **options)
+          Duckdb::TableDefinition.new(self, name, **options)
+        end
 
         def column_definitions(table_name)
           query("PRAGMA table_info(#{quote_table_name(table_name)})", "SCHEMA")
@@ -90,7 +98,7 @@ module ActiveRecord
             default_value = nil
           end
 
-          Column.new(
+          Duckdb::Column.new(
             name,
             default_value,
             type_metadata,
