@@ -37,6 +37,12 @@ module ActiveRecord
           internal_execute("ROLLBACK", "TRANSACTION")
         end
 
+        def explain(arel, binds = [], options = [])
+          sql = "EXPLAIN #{to_sql(arel, binds)}"
+          result = internal_exec_query(sql, "EXPLAIN")
+          Duckdb::ExplainPrettyPrinter.new.pp(result)
+        end
+
         private
           def perform_query(raw_connection, sql, binds, type_casted_binds, prepare:, notification_payload:, batch: false)
             result = if binds.nil? || binds.empty?

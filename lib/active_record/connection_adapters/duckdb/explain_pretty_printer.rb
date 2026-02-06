@@ -4,16 +4,10 @@ module ActiveRecord
   module ConnectionAdapters
     module Duckdb
       class ExplainPrettyPrinter # :nodoc:
-        # Pretty prints the result of an EXPLAIN QUERY PLAN in a way that resembles
-        # the output of the SQLite shell:
-        #
-        #   0|0|0|SEARCH TABLE users USING INTEGER PRIMARY KEY (rowid=?) (~1 rows)
-        #   0|1|1|SCAN TABLE posts (~100000 rows)
-        #
+        # Pretty prints the result of an EXPLAIN query from DuckDB.
+        # DuckDB returns explain output as rows with explain_key and explain_value columns.
         def pp(result)
-          result.rows.map do |row|
-            row.join("|")
-          end.join("\n") + "\n"
+          result.rows.map { |row| row.last }.join("\n") + "\n"
         end
       end
     end
