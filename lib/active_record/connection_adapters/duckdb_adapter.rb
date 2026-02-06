@@ -65,6 +65,10 @@ module ActiveRecord
         end
       end
 
+      def supports_insert_returning?
+        true
+      end
+
       def disconnect!
         super
 

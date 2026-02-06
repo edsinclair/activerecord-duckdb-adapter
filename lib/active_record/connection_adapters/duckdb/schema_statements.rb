@@ -4,6 +4,27 @@ module ActiveRecord
   module ConnectionAdapters
     module Duckdb
       module SchemaStatements # :nodoc:
+        def create_table(table_name, id: :primary_key, primary_key: nil, **options, &block)
+          super
+
+          if id != false
+            pk_name = primary_key || "id"
+            seq_name = sequence_name_for(table_name, pk_name)
+            execute("CREATE SEQUENCE IF NOT EXISTS #{quote_table_name(seq_name)}")
+            execute("ALTER TABLE #{quote_table_name(table_name)} ALTER COLUMN #{quote_column_name(pk_name)} SET DEFAULT nextval('#{seq_name}')")
+          end
+        end
+
+        def drop_table(table_name, **options)
+          pk = primary_keys(table_name.to_s) rescue []
+          super
+
+          if pk.length == 1
+            seq_name = sequence_name_for(table_name, pk.first)
+            execute("DROP SEQUENCE IF EXISTS #{quote_table_name(seq_name)}")
+          end
+        end
+
         def rename_table(table_name, new_name, **)
           execute("ALTER TABLE #{quote_table_name(table_name)} RENAME TO #{quote_table_name(new_name)}")
           rename_table_indexes(table_name, new_name)
@@ -34,13 +55,19 @@ module ActiveRecord
 
           type_metadata = fetch_type_metadata(type)
           default_value = dflt_value
+          default_function = nil
+
+          if default_value.is_a?(String) && default_value.match?(/\w+\(/)
+            default_function = default_value
+            default_value = nil
+          end
 
           Column.new(
             name,
             default_value,
             type_metadata,
             !notnull,
-            nil # default function
+            default_function
           )
         end
 
@@ -80,6 +107,10 @@ module ActiveRecord
           schema, name = string.to_s.scan(/[^`.\s]+|`[^`]*`/)
           schema, name = nil, schema unless name
           [schema, name]
+        end
+
+        def sequence_name_for(table_name, pk_name)
+          "#{table_name}_#{pk_name}_seq"
         end
       end
     end
