@@ -4,12 +4,9 @@ module ActiveRecord
   module ConnectionAdapters
     module Duckdb
       class Column < ConnectionAdapters::Column # :nodoc:
-        attr_reader :rowid
-
-        def initialize(*, auto_increment: nil, rowid: false, generated_type: nil, **)
+        def initialize(*, auto_increment: nil, generated_type: nil, **)
           super
           @auto_increment = auto_increment
-          @rowid = rowid
           @generated_type = generated_type
         end
 
@@ -18,15 +15,11 @@ module ActiveRecord
         end
 
         def auto_incremented_by_db?
-          auto_increment? || rowid
+          auto_increment?
         end
 
         def virtual?
           !@generated_type.nil?
-        end
-
-        def virtual_stored?
-          virtual? && @generated_type == :stored
         end
 
         def has_default?
@@ -53,8 +46,7 @@ module ActiveRecord
         def hash
           Column.hash ^
             super.hash ^
-            auto_increment?.hash ^
-            rowid.hash
+            auto_increment?.hash
         end
       end
     end

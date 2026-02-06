@@ -3,7 +3,7 @@
 module ActiveRecord
   module ConnectionAdapters
     module Duckdb
-      # = Active Record SQLite3 Adapter \Table Definition
+      # = Active Record DuckDB Adapter \Table Definition
       class TableDefinition < ActiveRecord::ConnectionAdapters::TableDefinition
         def change_column(column_name, type, **options)
           name = column_name.to_s
@@ -31,7 +31,7 @@ module ActiveRecord
           end
 
           def valid_column_definition_options
-            super + [:as, :type, :stored]
+            super + [:as, :type]
           end
       end
     end

@@ -21,13 +21,7 @@ module ActiveRecord
             end
 
             if as = options[:as]
-              sql << " GENERATED ALWAYS AS (#{as})"
-
-              if options[:stored]
-                sql << " STORED"
-              else
-                sql << " VIRTUAL"
-              end
+              sql << " GENERATED ALWAYS AS (#{as}) VIRTUAL"
             end
             super
           end
