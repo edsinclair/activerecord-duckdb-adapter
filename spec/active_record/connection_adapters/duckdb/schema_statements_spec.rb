@@ -298,4 +298,29 @@ RSpec.describe "DuckDB SchemaStatements" do
       expect(col.type).to eq(:string)
     end
   end
+
+  describe "#foreign_keys" do
+    before(:each) do
+      @connection.execute("CREATE TABLE fk_parent (id INTEGER PRIMARY KEY)")
+      @connection.execute("CREATE TABLE fk_child (id INTEGER, parent_id INTEGER REFERENCES fk_parent(id))")
+    end
+    after(:each) do
+      @connection.execute("DROP TABLE IF EXISTS fk_child")
+      @connection.execute("DROP TABLE IF EXISTS fk_parent")
+    end
+
+    it "returns foreign keys for a table" do
+      fks = @connection.foreign_keys("fk_child")
+      expect(fks.length).to eq(1)
+      expect(fks.first.from_table).to eq("fk_child")
+      expect(fks.first.to_table).to eq("fk_parent")
+      expect(fks.first.column).to eq("parent_id")
+      expect(fks.first.primary_key).to eq("id")
+    end
+
+    it "returns empty array for table without foreign keys" do
+      fks = @connection.foreign_keys("fk_parent")
+      expect(fks).to be_empty
+    end
+  end
 end

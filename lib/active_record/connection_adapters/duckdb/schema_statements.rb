@@ -72,6 +72,25 @@ module ActiveRecord
           change_column_null(table_name, column_name, options[:null]) if options.key?(:null)
         end
 
+        def foreign_keys(table_name)
+          result = query(<<~SQL, "SCHEMA")
+            SELECT constraint_name, constraint_column_names, referenced_table, referenced_column_names
+            FROM duckdb_constraints()
+            WHERE table_name = #{quote(table_name.to_s)}
+            AND constraint_type = 'FOREIGN KEY'
+          SQL
+
+          result.map do |row|
+            constraint_name, columns, to_table, primary_keys = row
+            options = {
+              name: constraint_name,
+              column: columns.length == 1 ? columns.first : columns,
+              primary_key: primary_keys.length == 1 ? primary_keys.first : primary_keys
+            }
+            ForeignKeyDefinition.new(table_name.to_s, to_table, options)
+          end
+        end
+
         def schema_creation # :nodoc:
           Duckdb::SchemaCreation.new(self)
         end
