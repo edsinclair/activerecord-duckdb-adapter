@@ -6,13 +6,20 @@ module ActiveRecord
       module SchemaStatements # :nodoc:
         private
 
-        def new_column_from_field(table_name, field)
-          _cid, name, type, notnull, _dflt_value, _pk = field
+        def column_definitions(table_name)
+          query("PRAGMA table_info(#{quote_table_name(table_name)})", "SCHEMA")
+        end
+
+        def new_column_from_field(table_name, field, _definitions = nil)
+          _cid, name, type, notnull, dflt_value, _pk = field
+
+          type_metadata = fetch_type_metadata(type)
+          default_value = dflt_value
 
           Column.new(
             name,
-            nil, # default value
-            fetch_type_metadata(type),
+            default_value,
+            type_metadata,
             !notnull,
             nil # default function
           )

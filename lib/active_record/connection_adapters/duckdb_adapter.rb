@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "active_record/connection_adapters/duckdb/database_statements"
+require "active_record/connection_adapters/duckdb/quoting"
 require "active_record/connection_adapters/duckdb/schema_statements"
 
 module ActiveRecord
@@ -28,6 +29,7 @@ module ActiveRecord
         )
       end
 
+      include Duckdb::Quoting
       include Duckdb::DatabaseStatements
       include Duckdb::SchemaStatements
 
