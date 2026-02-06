@@ -33,7 +33,7 @@ module ActiveRecord
               raw_connection.query(sql, *type_casted_binds)
             end
 
-            columns = result.columns.map(&:to_s)
+            columns = result.columns.map(&:name)
             rows = result.to_a
 
             ar_result = ActiveRecord::Result.new(columns, rows)
