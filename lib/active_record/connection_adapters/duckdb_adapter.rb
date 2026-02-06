@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "active_record"
+require "active_record/connection_adapters"
 require "active_record/connection_adapters/duckdb/column"
 require "active_record/connection_adapters/duckdb/database_statements"
 require "active_record/connection_adapters/duckdb/explain_pretty_printer"
