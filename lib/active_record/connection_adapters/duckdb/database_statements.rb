@@ -25,6 +25,18 @@ module ActiveRecord
         end
         alias :exec_update :exec_delete
 
+        def begin_db_transaction # :nodoc:
+          internal_execute("BEGIN", "TRANSACTION")
+        end
+
+        def commit_db_transaction # :nodoc:
+          internal_execute("COMMIT", "TRANSACTION")
+        end
+
+        def exec_rollback_db_transaction # :nodoc:
+          internal_execute("ROLLBACK", "TRANSACTION")
+        end
+
         private
           def perform_query(raw_connection, sql, binds, type_casted_binds, prepare:, notification_payload:, batch: false)
             result = if binds.nil? || binds.empty?
