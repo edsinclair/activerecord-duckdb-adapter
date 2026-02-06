@@ -4,6 +4,15 @@ module ActiveRecord
   module ConnectionAdapters
     module Duckdb
       module SchemaStatements # :nodoc:
+        def rename_table(table_name, new_name, **)
+          execute("ALTER TABLE #{quote_table_name(table_name)} RENAME TO #{quote_table_name(new_name)}")
+          rename_table_indexes(table_name, new_name)
+        end
+
+        def indexes(table_name)
+          []
+        end
+
         private
 
         def column_definitions(table_name)

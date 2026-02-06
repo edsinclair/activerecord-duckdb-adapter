@@ -114,4 +114,85 @@ RSpec.describe "DuckDB SchemaStatements" do
       expect(@connection.views).not_to include("test_base")
     end
   end
+
+  describe "#create_table" do
+    after(:each) { @connection.execute("DROP TABLE IF EXISTS test_create") }
+
+    it "creates table with columns" do
+      @connection.create_table(:test_create) do |t|
+        t.string :name
+        t.integer :age
+      end
+      expect(@connection.table_exists?(:test_create)).to be true
+      expect(@connection.columns(:test_create).map(&:name)).to include("name", "age")
+    end
+
+    it "creates table with auto-increment primary key" do
+      @connection.create_table(:test_create) do |t|
+        t.string :name
+      end
+      expect(@connection.primary_keys(:test_create)).to eq(["id"])
+    end
+
+    it "creates table without primary key when id: false" do
+      @connection.create_table(:test_create, id: false) do |t|
+        t.string :name
+      end
+      expect(@connection.primary_keys(:test_create)).to eq([])
+    end
+  end
+
+  describe "#drop_table" do
+    it "drops existing table" do
+      @connection.execute("CREATE TABLE test_drop (id INTEGER)")
+      @connection.drop_table(:test_drop)
+      expect(@connection.table_exists?(:test_drop)).to be false
+    end
+
+    it "does not raise error with if_exists option" do
+      expect { @connection.drop_table(:non_existent, if_exists: true) }.not_to raise_error
+    end
+  end
+
+  describe "#add_column" do
+    before(:each) do
+      @connection.execute("CREATE TABLE test_add_col (name VARCHAR)")
+    end
+    after(:each) { @connection.execute("DROP TABLE IF EXISTS test_add_col") }
+
+    it "adds column to existing table" do
+      @connection.add_column(:test_add_col, :age, :integer)
+      age_col = @connection.columns(:test_add_col).find { |c| c.name == "age" }
+      expect(age_col).not_to be_nil
+      expect(age_col.type).to eq(:integer)
+    end
+  end
+
+  describe "#remove_column" do
+    before(:each) do
+      @connection.execute("CREATE TABLE test_rm_col (name VARCHAR, age INTEGER)")
+    end
+    after(:each) { @connection.execute("DROP TABLE IF EXISTS test_rm_col") }
+
+    it "removes column from table" do
+      @connection.remove_column(:test_rm_col, :age)
+      column_names = @connection.columns(:test_rm_col).map(&:name)
+      expect(column_names).not_to include("age")
+      expect(column_names).to include("name")
+    end
+  end
+
+  describe "#rename_table" do
+    after(:each) do
+      @connection.execute("DROP TABLE IF EXISTS old_name")
+      @connection.execute("DROP TABLE IF EXISTS new_name")
+    end
+
+    it "renames table" do
+      @connection.execute("CREATE TABLE old_name (data VARCHAR)")
+      @connection.rename_table(:old_name, :new_name)
+      expect(@connection.table_exists?(:old_name)).to be false
+      expect(@connection.table_exists?(:new_name)).to be true
+    end
+  end
 end
