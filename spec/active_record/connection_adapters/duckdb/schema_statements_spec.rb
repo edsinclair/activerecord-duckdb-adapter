@@ -195,4 +195,47 @@ RSpec.describe "DuckDB SchemaStatements" do
       expect(@connection.table_exists?(:new_name)).to be true
     end
   end
+
+  describe "#add_index and #indexes" do
+    before(:each) do
+      @connection.execute("CREATE TABLE test_idx (email VARCHAR, name VARCHAR)")
+    end
+    after(:each) { @connection.execute("DROP TABLE IF EXISTS test_idx") }
+
+    it "adds index on single column" do
+      @connection.add_index(:test_idx, :email)
+      idx = @connection.indexes(:test_idx).find { |i| i.columns == ["email"] }
+      expect(idx).not_to be_nil
+    end
+
+    it "adds named index" do
+      @connection.add_index(:test_idx, :email, name: "idx_email")
+      expect(@connection.indexes(:test_idx).map(&:name)).to include("idx_email")
+    end
+
+    it "adds unique index" do
+      @connection.add_index(:test_idx, :email, unique: true)
+      idx = @connection.indexes(:test_idx).find { |i| i.columns == ["email"] }
+      expect(idx.unique).to be true
+    end
+
+    it "adds composite index" do
+      @connection.add_index(:test_idx, [:email, :name])
+      idx = @connection.indexes(:test_idx).find { |i| i.columns == ["email", "name"] }
+      expect(idx).not_to be_nil
+    end
+  end
+
+  describe "#remove_index" do
+    before(:each) do
+      @connection.execute("CREATE TABLE test_rm_idx (email VARCHAR)")
+      @connection.add_index(:test_rm_idx, :email, name: "idx_email")
+    end
+    after(:each) { @connection.execute("DROP TABLE IF EXISTS test_rm_idx") }
+
+    it "removes index by name" do
+      @connection.remove_index(:test_rm_idx, name: "idx_email")
+      expect(@connection.indexes(:test_rm_idx)).to be_empty
+    end
+  end
 end

@@ -10,7 +10,17 @@ module ActiveRecord
         end
 
         def indexes(table_name)
-          []
+          result = query("SELECT index_name, is_unique, expressions FROM duckdb_indexes() WHERE table_name = #{quote(table_name.to_s)} AND NOT is_primary", "SCHEMA")
+          result.map do |row|
+            index_name, is_unique, expressions = row
+            columns = parse_index_expressions(expressions)
+            IndexDefinition.new(table_name.to_s, index_name, is_unique, columns)
+          end
+        end
+
+        def remove_index(table_name, column_name = nil, **options)
+          index_name = index_name_for_remove(table_name, column_name, options)
+          execute("DROP INDEX #{quote_column_name(index_name)}")
         end
 
         private
@@ -55,6 +65,15 @@ module ActiveRecord
           scope[:name] = quote(name) if name
           scope[:type] = quote(type) if type
           scope
+        end
+
+        def parse_index_expressions(expressions)
+          # DuckDB returns expressions like: [email, '"name"']
+          # Strip outer brackets and split by comma, then clean up quotes
+          inner = expressions.to_s.gsub(/\A\[|\]\z/, "")
+          inner.split(",").map do |col|
+            col.strip.gsub(/\A'?"?|"?'?\z/, "")
+          end
         end
 
         def extract_schema_qualified_name(string)
