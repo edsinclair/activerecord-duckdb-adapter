@@ -186,6 +186,8 @@ RSpec.describe "DuckDB SchemaStatements" do
     after(:each) do
       @connection.execute("DROP TABLE IF EXISTS old_name")
       @connection.execute("DROP TABLE IF EXISTS new_name")
+      @connection.execute("DROP SEQUENCE IF EXISTS old_name_id_seq")
+      @connection.execute("DROP SEQUENCE IF EXISTS new_name_id_seq")
     end
 
     it "renames table" do
@@ -193,6 +195,23 @@ RSpec.describe "DuckDB SchemaStatements" do
       @connection.rename_table(:old_name, :new_name)
       expect(@connection.table_exists?(:old_name)).to be false
       expect(@connection.table_exists?(:new_name)).to be true
+    end
+
+    it "renames sequence and auto-increment still works after rename" do
+      @connection.create_table(:old_name) { |t| t.string :name }
+      @connection.execute("INSERT INTO old_name (name) VALUES ('before')")
+      @connection.rename_table(:old_name, :new_name)
+
+      # Verify new sequence exists and old one doesn't
+      sequences = @connection.select_values("SELECT sequence_name FROM duckdb_sequences()")
+      expect(sequences).to include("new_name_id_seq")
+      expect(sequences).not_to include("old_name_id_seq")
+
+      # Verify auto-increment still works
+      @connection.execute("INSERT INTO new_name (name) VALUES ('after')")
+      ids = @connection.select_values("SELECT id FROM new_name ORDER BY id")
+      expect(ids.length).to eq(2)
+      expect(ids.last).to be > ids.first
     end
   end
 

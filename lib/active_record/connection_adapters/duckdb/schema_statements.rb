@@ -26,8 +26,14 @@ module ActiveRecord
         end
 
         def rename_table(table_name, new_name, **)
+          pk = primary_keys(table_name.to_s) rescue []
+
           execute("ALTER TABLE #{quote_table_name(table_name)} RENAME TO #{quote_table_name(new_name)}")
           rename_table_indexes(table_name, new_name)
+
+          if pk.length == 1
+            rename_sequence(table_name, pk.first, new_name, pk.first)
+          end
         end
 
         def indexes(table_name)
@@ -166,6 +172,21 @@ module ActiveRecord
 
         def sequence_name_for(table_name, pk_name)
           "#{table_name}_#{pk_name}_seq"
+        end
+
+        def rename_sequence(old_table, pk_name, new_table, new_pk_name)
+          old_seq = sequence_name_for(old_table, pk_name)
+          new_seq = sequence_name_for(new_table, new_pk_name)
+          return if old_seq == new_seq
+
+          # Get the current sequence value so the new sequence continues from it
+          last_value = select_value("SELECT last_value FROM duckdb_sequences() WHERE sequence_name = #{quote(old_seq)}")
+          return unless last_value
+
+          # Create new sequence starting after the last used value
+          execute("CREATE SEQUENCE #{quote_table_name(new_seq)} START #{last_value + 1}")
+          execute("ALTER TABLE #{quote_table_name(new_table)} ALTER COLUMN #{quote_column_name(new_pk_name)} SET DEFAULT nextval('#{new_seq}')")
+          execute("DROP SEQUENCE #{quote_table_name(old_seq)}")
         end
       end
     end
