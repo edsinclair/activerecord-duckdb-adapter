@@ -20,12 +20,12 @@ RSpec.describe "DuckDB Transactions" do
   end
 
   it "rolls back transaction on error" do
-    expect {
+    expect do
       @connection.transaction do
         @connection.execute("INSERT INTO test_txn (name) VALUES ('Test')")
         raise "Rollback"
       end
-    }.to raise_error(RuntimeError)
+    end.to raise_error(RuntimeError)
     expect(@connection.select_value("SELECT COUNT(*) FROM test_txn")).to eq(0)
   end
 

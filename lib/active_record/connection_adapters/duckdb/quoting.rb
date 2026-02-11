@@ -42,19 +42,19 @@ module ActiveRecord
           end
 
           def quote_column_name(name)
-            QUOTED_COLUMN_NAMES[name] ||= %Q("#{name.to_s.gsub('"', '""')}").freeze
+            QUOTED_COLUMN_NAMES[name] ||= %("#{name.to_s.gsub('"', '""')}").freeze
           end
 
           def quote_table_name(name)
-            QUOTED_TABLE_NAMES[name] ||= %Q("#{name.to_s.gsub('"', '""').gsub(".", "\".\"")}").freeze
+            QUOTED_TABLE_NAMES[name] ||= %("#{name.to_s.gsub('"', '""').gsub(".", "\".\"")}").freeze
           end
         end
 
-        def quote_string(s)
-          s.gsub("'", "''")
+        def quote_string(str)
+          str.gsub("'", "''")
         end
 
-        def quote_table_name_for_assignment(table, attr)
+        def quote_table_name_for_assignment(_table, attr)
           quote_column_name(attr)
         end
 

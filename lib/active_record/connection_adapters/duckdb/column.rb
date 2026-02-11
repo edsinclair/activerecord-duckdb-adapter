@@ -41,7 +41,7 @@ module ActiveRecord
             super &&
             auto_increment? == other.auto_increment?
         end
-        alias :eql? :==
+        alias eql? ==
 
         def hash
           Column.hash ^

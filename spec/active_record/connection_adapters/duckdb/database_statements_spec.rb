@@ -19,7 +19,7 @@ RSpec.describe "DuckDB DatabaseStatements" do
 
     it "returns correct column names dynamically" do
       result = @connection.exec_query("SELECT id, name, email FROM test_users")
-      expect(result.columns).to eq(["id", "name", "email"])
+      expect(result.columns).to eq(%w[id name email])
     end
 
     it "returns correct data" do
@@ -34,7 +34,7 @@ RSpec.describe "DuckDB DatabaseStatements" do
 
     it "handles four-column queries" do
       result = @connection.exec_query("SELECT id, name, email, age FROM test_users")
-      expect(result.columns).to eq(["id", "name", "email", "age"])
+      expect(result.columns).to eq(%w[id name email age])
     end
   end
 
@@ -42,16 +42,16 @@ RSpec.describe "DuckDB DatabaseStatements" do
     after(:each) { @connection.execute("DROP TABLE IF EXISTS test_execute") }
 
     it "executes CREATE TABLE" do
-      expect {
+      expect do
         @connection.execute("CREATE TABLE test_execute (id INTEGER, name VARCHAR)")
-      }.not_to raise_error
+      end.not_to raise_error
     end
 
     it "executes INSERT" do
       @connection.execute("CREATE TABLE test_execute (id INTEGER, name VARCHAR)")
-      expect {
+      expect do
         @connection.execute("INSERT INTO test_execute VALUES (1, 'Test')")
-      }.not_to raise_error
+      end.not_to raise_error
     end
 
     it "executes SELECT and returns result" do
@@ -77,7 +77,7 @@ RSpec.describe "DuckDB DatabaseStatements" do
 
     it "#select_all returns correct column names" do
       result = @connection.select_all("SELECT id, name FROM test_select")
-      expect(result.columns).to eq(["id", "name"])
+      expect(result.columns).to eq(%w[id name])
     end
 
     it "#select_one returns single row as hash" do
@@ -93,7 +93,7 @@ RSpec.describe "DuckDB DatabaseStatements" do
 
     it "#select_values returns array of first column values" do
       result = @connection.select_values("SELECT name FROM test_select ORDER BY id")
-      expect(result).to eq(["Alice", "Bob"])
+      expect(result).to eq(%w[Alice Bob])
     end
   end
 

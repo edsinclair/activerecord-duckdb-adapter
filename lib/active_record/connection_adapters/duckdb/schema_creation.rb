@@ -5,26 +5,25 @@ module ActiveRecord
     module Duckdb
       class SchemaCreation < SchemaCreation # :nodoc:
         private
-          def visit_ForeignKeyDefinition(o)
-            super.dup.tap do |sql|
-              sql << " DEFERRABLE INITIALLY #{o.deferrable.to_s.upcase}" if o.deferrable
-            end
-          end
 
-          def supports_index_using?
-            false
+        def visit_ForeignKeyDefinition(o)
+          super.dup.tap do |sql|
+            sql << " DEFERRABLE INITIALLY #{o.deferrable.to_s.upcase}" if o.deferrable
           end
+        end
 
-          def add_column_options!(sql, options)
-            if options[:collation]
-              sql << " COLLATE \"#{options[:collation]}\""
-            end
+        def supports_index_using?
+          false
+        end
 
-            if as = options[:as]
-              sql << " GENERATED ALWAYS AS (#{as}) VIRTUAL"
-            end
-            super
+        def add_column_options!(sql, options)
+          sql << " COLLATE \"#{options[:collation]}\"" if options[:collation]
+
+          if (as = options[:as])
+            sql << " GENERATED ALWAYS AS (#{as}) VIRTUAL"
           end
+          super
+        end
       end
     end
   end

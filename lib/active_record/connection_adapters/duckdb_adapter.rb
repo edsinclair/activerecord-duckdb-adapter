@@ -31,9 +31,7 @@ module ActiveRecord
       def initialize(...)
         super
         @last_affected_rows = nil
-        @connection_parameters = @config.merge(
-          database: @config[:database].to_s
-        )
+        @connection_parameters = @config.merge(database: @config[:database].to_s)
       end
 
       include Duckdb::Quoting
@@ -66,10 +64,9 @@ module ActiveRecord
       end
 
       def active?
-        if connected?
-          verified!
-          true
-        end
+        return unless connected?
+
+        verified! && true
       end
 
       def supports_insert_returning?
@@ -128,32 +125,33 @@ module ActiveRecord
       end
 
       private
-        def translate_exception(exception, message:, sql:, binds:)
-          case exception.message
-          when /Duplicate key.*violates unique constraint/i
-            RecordNotUnique.new(message, sql: sql, binds: binds, connection_pool: @pool)
-          when /NOT NULL constraint failed/i
-            NotNullViolation.new(message, sql: sql, binds: binds, connection_pool: @pool)
-          when /Violates foreign key constraint/i
-            InvalidForeignKey.new(message, sql: sql, binds: binds, connection_pool: @pool)
-          else
-            super
-          end
-        end
 
-        def connect
-          @raw_connection = self.class.new_client(@connection_parameters)
-        rescue ConnectionNotEstablished => ex
-          raise ex.set_pool(@pool)
+      def translate_exception(exception, message:, sql:, binds:)
+        case exception.message
+        when /Duplicate key.*violates unique constraint/i
+          RecordNotUnique.new(message, sql: sql, binds: binds, connection_pool: @pool)
+        when /NOT NULL constraint failed/i
+          NotNullViolation.new(message, sql: sql, binds: binds, connection_pool: @pool)
+        when /Violates foreign key constraint/i
+          InvalidForeignKey.new(message, sql: sql, binds: binds, connection_pool: @pool)
+        else
+          super
         end
+      end
 
-        def reconnect
-          if active?
-            # DuckDB doesn't have a rollback on the connection level outside transactions
-          else
-            connect
-          end
+      def connect
+        @raw_connection = self.class.new_client(@connection_parameters)
+      rescue ConnectionNotEstablished => e
+        raise e.set_pool(@pool)
+      end
+
+      def reconnect
+        if active?
+          # DuckDB doesn't have a rollback on the connection level outside transactions
+        else
+          connect
         end
+      end
     end
   end
 end

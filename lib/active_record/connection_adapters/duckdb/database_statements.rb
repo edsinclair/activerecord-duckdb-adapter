@@ -20,10 +20,10 @@ module ActiveRecord
         end
 
         def exec_delete(sql, name = nil, binds = []) # :nodoc:
-          result = internal_exec_query(sql, name, binds)
+          internal_exec_query(sql, name, binds)
           @last_affected_rows
         end
-        alias :exec_update :exec_delete
+        alias exec_update exec_delete
 
         def begin_db_transaction # :nodoc:
           internal_execute("BEGIN", "TRANSACTION")
@@ -37,38 +37,39 @@ module ActiveRecord
           internal_execute("ROLLBACK", "TRANSACTION")
         end
 
-        def explain(arel, binds = [], options = [])
+        def explain(arel, binds = [], _options = [])
           sql = "EXPLAIN #{to_sql(arel, binds)}"
           result = internal_exec_query(sql, "EXPLAIN")
           Duckdb::ExplainPrettyPrinter.new.pp(result)
         end
 
         private
-          def perform_query(raw_connection, sql, binds, type_casted_binds, prepare:, notification_payload:, batch: false)
-            result = if binds.nil? || binds.empty?
-              raw_connection.query(sql)
-            else
-              raw_connection.query(sql, *type_casted_binds)
-            end
 
-            columns = result.columns.map(&:name)
-            rows = result.to_a
+        def perform_query(raw_connection, sql, binds, type_casted_binds, prepare:, notification_payload:, batch: false)
+          result = if binds.nil? || binds.empty?
+                     raw_connection.query(sql)
+                   else
+                     raw_connection.query(sql, *type_casted_binds)
+                   end
 
-            ar_result = ActiveRecord::Result.new(columns, rows)
-            @last_affected_rows = result.respond_to?(:rows_changed) ? result.rows_changed : 0
-            verified!
+          columns = result.columns.map(&:name)
+          rows = result.to_a
 
-            notification_payload[:row_count] = ar_result.length
-            ar_result
-          end
+          ar_result = ActiveRecord::Result.new(columns, rows)
+          @last_affected_rows = result.respond_to?(:rows_changed) ? result.rows_changed : 0
+          verified!
 
-          def cast_result(result)
-            result
-          end
+          notification_payload[:row_count] = ar_result.length
+          ar_result
+        end
 
-          def affected_rows(result)
-            @last_affected_rows
-          end
+        def cast_result(result)
+          result
+        end
+
+        def affected_rows(_result)
+          @last_affected_rows
+        end
       end
     end
   end

@@ -7,37 +7,47 @@ module ActiveRecord
         def create_table(table_name, id: :primary_key, primary_key: nil, **options, &block)
           super
 
-          if id != false
-            pk_name = primary_key || "id"
-            seq_name = sequence_name_for(table_name, pk_name)
-            execute("CREATE SEQUENCE IF NOT EXISTS #{quote_table_name(seq_name)}")
-            execute("ALTER TABLE #{quote_table_name(table_name)} ALTER COLUMN #{quote_column_name(pk_name)} SET DEFAULT nextval('#{seq_name}')")
-          end
+          return unless id != false
+
+          pk_name = primary_key || "id"
+          seq_name = sequence_name_for(table_name, pk_name)
+          execute("CREATE SEQUENCE IF NOT EXISTS #{quote_table_name(seq_name)}")
+          execute("ALTER TABLE #{quote_table_name(table_name)} ALTER COLUMN #{quote_column_name(pk_name)} SET DEFAULT nextval('#{seq_name}')")
         end
 
         def drop_table(table_name, **options)
-          pk = primary_keys(table_name.to_s) rescue []
+          pk = begin
+            primary_keys(table_name.to_s)
+          rescue StandardError
+            []
+          end
           super
 
-          if pk.length == 1
-            seq_name = sequence_name_for(table_name, pk.first)
-            execute("DROP SEQUENCE IF EXISTS #{quote_table_name(seq_name)}")
-          end
+          return unless pk.length == 1
+
+          seq_name = sequence_name_for(table_name, pk.first)
+          execute("DROP SEQUENCE IF EXISTS #{quote_table_name(seq_name)}")
         end
 
         def rename_table(table_name, new_name, **)
-          pk = primary_keys(table_name.to_s) rescue []
+          pk = begin
+            primary_keys(table_name.to_s)
+          rescue StandardError
+            []
+          end
 
           execute("ALTER TABLE #{quote_table_name(table_name)} RENAME TO #{quote_table_name(new_name)}")
           rename_table_indexes(table_name, new_name)
 
-          if pk.length == 1
-            rename_sequence(table_name, pk.first, new_name, pk.first)
-          end
+          return unless pk.length == 1
+
+          rename_sequence(table_name, pk.first, new_name, pk.first)
         end
 
         def indexes(table_name)
-          result = query("SELECT index_name, is_unique, expressions FROM duckdb_indexes() WHERE table_name = #{quote(table_name.to_s)} AND NOT is_primary", "SCHEMA")
+          result = query(
+            "SELECT index_name, is_unique, expressions FROM duckdb_indexes() WHERE table_name = #{quote(table_name.to_s)} AND NOT is_primary", "SCHEMA"
+          )
           result.map do |row|
             index_name, is_unique, expressions = row
             columns = parse_index_expressions(expressions)
@@ -59,7 +69,7 @@ module ActiveRecord
           end
         end
 
-        def change_column_null(table_name, column_name, null, default = nil)
+        def change_column_null(table_name, column_name, null, _default = nil)
           if null
             execute("ALTER TABLE #{quote_table_name(table_name)} ALTER COLUMN #{quote_column_name(column_name)} DROP NOT NULL")
           else
@@ -111,7 +121,7 @@ module ActiveRecord
           query("PRAGMA table_info(#{quote_table_name(table_name)})", "SCHEMA")
         end
 
-        def new_column_from_field(table_name, field, _definitions = nil)
+        def new_column_from_field(_table_name, field, _definitions = nil)
           _cid, name, type, notnull, dflt_value, _pk = field
 
           type_metadata = fetch_type_metadata(type)
@@ -166,7 +176,10 @@ module ActiveRecord
 
         def extract_schema_qualified_name(string)
           schema, name = string.to_s.scan(/[^`.\s]+|`[^`]*`/)
-          schema, name = nil, schema unless name
+          unless name
+            name = schema
+            schema = nil
+          end
           [schema, name]
         end
 

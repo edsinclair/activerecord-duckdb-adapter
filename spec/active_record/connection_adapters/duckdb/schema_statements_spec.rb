@@ -239,8 +239,8 @@ RSpec.describe "DuckDB SchemaStatements" do
     end
 
     it "adds composite index" do
-      @connection.add_index(:test_idx, [:email, :name])
-      idx = @connection.indexes(:test_idx).find { |i| i.columns == ["email", "name"] }
+      @connection.add_index(:test_idx, %i[email name])
+      idx = @connection.indexes(:test_idx).find { |i| i.columns == %w[email name] }
       expect(idx).not_to be_nil
     end
   end
@@ -281,17 +281,17 @@ RSpec.describe "DuckDB SchemaStatements" do
 
     it "adds NOT NULL constraint" do
       @connection.change_column_null(:test_null, :name, false)
-      expect {
+      expect do
         @connection.execute("INSERT INTO test_null (name) VALUES (NULL)")
-      }.to raise_error(ActiveRecord::NotNullViolation)
+      end.to raise_error(ActiveRecord::NotNullViolation)
     end
 
     it "removes NOT NULL constraint" do
       @connection.execute("ALTER TABLE test_null ALTER COLUMN name SET NOT NULL")
       @connection.change_column_null(:test_null, :name, true)
-      expect {
+      expect do
         @connection.execute("INSERT INTO test_null (name) VALUES (NULL)")
-      }.not_to raise_error
+      end.not_to raise_error
     end
   end
 

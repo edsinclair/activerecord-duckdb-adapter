@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "spec_helper"
 
 RSpec.describe ActiveRecord::ConnectionAdapters::DuckdbAdapter do
@@ -45,21 +46,21 @@ RSpec.describe ActiveRecord::ConnectionAdapters::DuckdbAdapter do
 
     it "raises RecordNotUnique on duplicate unique value" do
       @connection.execute("INSERT INTO test_errors (id, email, name) VALUES (1, 'a@b.com', 'A')")
-      expect {
+      expect do
         @connection.execute("INSERT INTO test_errors (id, email, name) VALUES (2, 'a@b.com', 'B')")
-      }.to raise_error(ActiveRecord::RecordNotUnique)
+      end.to raise_error(ActiveRecord::RecordNotUnique)
     end
 
     it "raises NotNullViolation on null in NOT NULL column" do
-      expect {
+      expect do
         @connection.execute("INSERT INTO test_errors (id, email) VALUES (1, 'a@b.com')")
-      }.to raise_error(ActiveRecord::NotNullViolation)
+      end.to raise_error(ActiveRecord::NotNullViolation)
     end
 
     it "raises StatementInvalid on bad SQL" do
-      expect {
+      expect do
         @connection.execute("INVALID SQL")
-      }.to raise_error(ActiveRecord::StatementInvalid)
+      end.to raise_error(ActiveRecord::StatementInvalid)
     end
   end
 

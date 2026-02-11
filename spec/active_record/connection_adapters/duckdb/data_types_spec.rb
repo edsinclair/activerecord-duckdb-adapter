@@ -10,8 +10,8 @@ RSpec.describe "DuckDB Data Types" do
   describe "NATIVE_DATABASE_TYPES" do
     it "includes all essential Rails types" do
       types = ActiveRecord::ConnectionAdapters::DuckdbAdapter::NATIVE_DATABASE_TYPES
-      [:string, :text, :integer, :float, :decimal, :datetime, :date,
-       :time, :boolean, :binary, :bigint].each do |t|
+      %i[string text integer float decimal datetime date
+         time boolean binary bigint].each do |t|
         expect(types).to have_key(t), "Missing type: #{t}"
       end
     end

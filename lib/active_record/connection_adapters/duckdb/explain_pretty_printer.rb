@@ -7,7 +7,7 @@ module ActiveRecord
         # Pretty prints the result of an EXPLAIN query from DuckDB.
         # DuckDB returns explain output as rows with explain_key and explain_value columns.
         def pp(result)
-          result.rows.map { |row| row.last }.join("\n") + "\n"
+          "#{result.rows.map(&:last).join("\n")}\n"
         end
       end
     end
