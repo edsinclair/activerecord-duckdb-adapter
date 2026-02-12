@@ -24,11 +24,9 @@ if defined?(Rails)
   end
 elsif ActiveRecord::ConnectionAdapters.respond_to?(:register)
   # Non-Rails usage: register the adapter manually
-  if ActiveRecord::ConnectionAdapters.respond_to?(:register)
-    ActiveRecord::ConnectionAdapters.register(
-      "duckdb",
-      "ActiveRecord::ConnectionAdapters::DuckdbAdapter",
-      "active_record/connection_adapters/duckdb_adapter"
-    )
-  end
+  ActiveRecord::ConnectionAdapters.register(
+    "duckdb",
+    "ActiveRecord::ConnectionAdapters::DuckdbAdapter",
+    "active_record/connection_adapters/duckdb_adapter"
+  )
 end

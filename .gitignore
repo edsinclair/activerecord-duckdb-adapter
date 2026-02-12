@@ -13,5 +13,8 @@
 # macOS
 .DS_Store
 
+# Editor / IDE
+.ruby-lsp/
+
 # Claude Code
 .claude/
