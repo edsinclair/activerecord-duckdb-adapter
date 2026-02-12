@@ -6,10 +6,6 @@ if defined?(Rails)
   module ActiveRecord
     module ConnectionAdapters
       class DuckdbRailtie < ::Rails::Railtie
-        rake_tasks do
-          load "active_record/connection_adapters/duckdb/database_tasks.rb"
-        end
-
         ActiveSupport.on_load(:active_record) do
           if ActiveRecord::ConnectionAdapters.respond_to?(:register)
             ActiveRecord::ConnectionAdapters.register(
