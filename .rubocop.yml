@@ -52,10 +52,14 @@ Naming/MethodParameterName:
   Exclude:
     - "lib/active_record/connection_adapters/duckdb/schema_creation.rb"
 
-# ActiveRecord interface method name we must match
-Naming/PredicateName:
+# ActiveRecord interface method names we must match
+Naming/PredicatePrefix:
   Exclude:
     - "lib/active_record/connection_adapters/duckdb/column.rb"
+
+Naming/PredicateMethod:
+  Exclude:
+    - "lib/active_record/connection_adapters/duckdb/quoting.rb"
 
 # These params match the ActiveRecord parent signature
 Lint/UnusedMethodArgument:
