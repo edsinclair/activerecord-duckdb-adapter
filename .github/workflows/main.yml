@@ -6,6 +6,9 @@ on:
       - main
   pull_request:
 
+env:
+  DUCKDB_VERSION: "1.4.1"
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -23,6 +26,11 @@ jobs:
       ACTIVERECORD_VERSION: ${{ matrix.activerecord }}
     steps:
       - uses: actions/checkout@v4
+      - name: Setup DuckDB
+        uses: ./.github/actions/setup-duckdb
+        with:
+          version: ${{ env.DUCKDB_VERSION }}
+          arch: amd64
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
