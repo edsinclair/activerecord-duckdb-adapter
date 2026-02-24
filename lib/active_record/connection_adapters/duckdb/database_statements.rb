@@ -52,14 +52,15 @@ module ActiveRecord
                      raw_connection.query(sql, *type_casted_binds)
                    end
 
-          columns = result.columns.map(&:name)
-          rows = result.to_a
+          ar_result = build_result(result)
+          notification_payload[:row_count] = ar_result.length
+          ar_result
+        end
 
-          ar_result = ActiveRecord::Result.new(columns, rows)
+        def build_result(result)
+          ar_result = ActiveRecord::Result.new(result.columns.map(&:name), result.to_a)
           @last_affected_rows = result.respond_to?(:rows_changed) ? result.rows_changed : 0
           verified!
-
-          notification_payload[:row_count] = ar_result.length
           ar_result
         end
 

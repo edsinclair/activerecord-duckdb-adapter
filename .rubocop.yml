@@ -1,8 +1,63 @@
 AllCops:
   TargetRubyVersion: 3.1
+  NewCops: enable
+  SuggestExtensions: false
 
 Style/StringLiterals:
   EnforcedStyle: double_quotes
 
 Style/StringLiteralsInInterpolation:
   EnforcedStyle: double_quotes
+
+# Bundler convention: gem entrypoint must use hyphens to match gem name
+Naming/FileName:
+  Exclude:
+    - "lib/activerecord-duckdb-adapter.rb"
+
+Style/Documentation:
+  Enabled: false
+
+# RSpec blocks and gemspec are naturally long
+Metrics/BlockLength:
+  Exclude:
+    - "spec/**/*"
+    - "*.gemspec"
+
+# Adapter code necessarily matches ActiveRecord's interface signatures
+Metrics/ParameterLists:
+  Exclude:
+    - "lib/active_record/connection_adapters/duckdb/database_statements.rb"
+    - "lib/active_record/connection_adapters/duckdb/schema_statements.rb"
+
+Metrics/MethodLength:
+  Exclude:
+    - "lib/active_record/connection_adapters/duckdb/quoting.rb"
+    - "lib/active_record/connection_adapters/duckdb/schema_statements.rb"
+
+Metrics/ModuleLength:
+  Exclude:
+    - "lib/active_record/connection_adapters/duckdb/**/*"
+
+Metrics/ClassLength:
+  Exclude:
+    - "lib/active_record/connection_adapters/duckdb_adapter.rb"
+
+# ActiveRecord visitor pattern uses this naming convention
+Naming/MethodName:
+  Exclude:
+    - "lib/active_record/connection_adapters/duckdb/schema_creation.rb"
+
+# ActiveRecord visitor pattern uses single-letter parameter
+Naming/MethodParameterName:
+  Exclude:
+    - "lib/active_record/connection_adapters/duckdb/schema_creation.rb"
+
+# ActiveRecord interface method name we must match
+Naming/PredicateName:
+  Exclude:
+    - "lib/active_record/connection_adapters/duckdb/column.rb"
+
+# These params match the ActiveRecord parent signature
+Lint/UnusedMethodArgument:
+  Exclude:
+    - "lib/active_record/connection_adapters/duckdb/database_statements.rb"

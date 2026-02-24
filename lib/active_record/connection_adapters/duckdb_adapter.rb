@@ -39,21 +39,21 @@ module ActiveRecord
       include Duckdb::SchemaStatements
 
       NATIVE_DATABASE_TYPES = {
-        primary_key:  "INTEGER PRIMARY KEY",
-        string:       { name: "VARCHAR" },
-        text:         { name: "VARCHAR" },
-        integer:      { name: "INTEGER" },
-        float:        { name: "REAL" },
-        decimal:      { name: "DECIMAL" },
-        datetime:     { name: "TIMESTAMP" },
-        time:         { name: "TIME" },
-        date:         { name: "DATE" },
-        bigint:       { name: "BIGINT" },
-        binary:       { name: "BLOB" },
-        boolean:      { name: "BOOLEAN" },
-        uuid:         { name: "UUID" },
-        json:         { name: "JSON" },
-      }
+        primary_key: "INTEGER PRIMARY KEY",
+        string: { name: "VARCHAR" },
+        text: { name: "VARCHAR" },
+        integer: { name: "INTEGER" },
+        float: { name: "REAL" },
+        decimal: { name: "DECIMAL" },
+        datetime: { name: "TIMESTAMP" },
+        time: { name: "TIME" },
+        date: { name: "DATE" },
+        bigint: { name: "BIGINT" },
+        binary: { name: "BLOB" },
+        boolean: { name: "BOOLEAN" },
+        uuid: { name: "UUID" },
+        json: { name: "JSON" }
+      }.freeze
 
       def native_database_types
         NATIVE_DATABASE_TYPES
@@ -64,7 +64,7 @@ module ActiveRecord
       end
 
       def active?
-        return unless connected?
+        return false unless connected?
 
         verified! && true
       end

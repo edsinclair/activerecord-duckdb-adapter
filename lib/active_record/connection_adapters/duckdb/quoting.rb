@@ -86,11 +86,7 @@ module ActiveRecord
         def quote_default_expression(value, column) # :nodoc:
           if value.is_a?(Proc)
             value = value.call
-            if value.match?(/\A\w+\(.*\)\z/)
-              "(#{value})"
-            else
-              value
-            end
+            value.match?(/\A\w+\(.*\)\z/) ? "(#{value})" : value
           else
             super
           end
@@ -101,11 +97,7 @@ module ActiveRecord
           when BigDecimal, Rational
             value.to_f
           when String
-            if value.encoding == Encoding::ASCII_8BIT
-              super(value.encode(Encoding::UTF_8))
-            else
-              super
-            end
+            value.encoding == Encoding::ASCII_8BIT ? super(value.encode(Encoding::UTF_8)) : super
           else
             super
           end

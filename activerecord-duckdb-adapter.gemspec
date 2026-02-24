@@ -37,4 +37,5 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "activerecord", ">= 8.0", "< 9.0"
   spec.add_dependency("duckdb")
+  spec.metadata["rubygems_mfa_required"] = "true"
 end

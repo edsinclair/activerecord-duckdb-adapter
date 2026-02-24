@@ -12,7 +12,11 @@ module ActiveRecord
           pk_name = primary_key || "id"
           seq_name = sequence_name_for(table_name, pk_name)
           execute("CREATE SEQUENCE IF NOT EXISTS #{quote_table_name(seq_name)}")
-          execute("ALTER TABLE #{quote_table_name(table_name)} ALTER COLUMN #{quote_column_name(pk_name)} SET DEFAULT nextval('#{seq_name}')")
+          execute(<<~SQL.squish)
+            ALTER TABLE #{quote_table_name(table_name)}
+            ALTER COLUMN #{quote_column_name(pk_name)}
+            SET DEFAULT nextval('#{seq_name}')
+          SQL
         end
 
         def drop_table(table_name, **options)
@@ -45,9 +49,10 @@ module ActiveRecord
         end
 
         def indexes(table_name)
-          result = query(
-            "SELECT index_name, is_unique, expressions FROM duckdb_indexes() WHERE table_name = #{quote(table_name.to_s)} AND NOT is_primary", "SCHEMA"
-          )
+          result = query(<<~SQL.squish, "SCHEMA")
+            SELECT index_name, is_unique, expressions FROM duckdb_indexes()
+            WHERE table_name = #{quote(table_name.to_s)} AND NOT is_primary
+          SQL
           result.map do |row|
             index_name, is_unique, expressions = row
             columns = parse_index_expressions(expressions)
@@ -63,27 +68,45 @@ module ActiveRecord
         def change_column_default(table_name, column_name, default_or_changes)
           default = extract_new_default_value(default_or_changes)
           if default.nil?
-            execute("ALTER TABLE #{quote_table_name(table_name)} ALTER COLUMN #{quote_column_name(column_name)} DROP DEFAULT")
+            execute(<<~SQL.squish)
+              ALTER TABLE #{quote_table_name(table_name)}
+              ALTER COLUMN #{quote_column_name(column_name)} DROP DEFAULT
+            SQL
           else
-            execute("ALTER TABLE #{quote_table_name(table_name)} ALTER COLUMN #{quote_column_name(column_name)} SET DEFAULT #{quote(default)}")
+            execute(<<~SQL.squish)
+              ALTER TABLE #{quote_table_name(table_name)}
+              ALTER COLUMN #{quote_column_name(column_name)} SET DEFAULT #{quote(default)}
+            SQL
           end
         end
 
         def change_column_null(table_name, column_name, null, _default = nil)
           if null
-            execute("ALTER TABLE #{quote_table_name(table_name)} ALTER COLUMN #{quote_column_name(column_name)} DROP NOT NULL")
+            execute(<<~SQL.squish)
+              ALTER TABLE #{quote_table_name(table_name)}
+              ALTER COLUMN #{quote_column_name(column_name)} DROP NOT NULL
+            SQL
           else
-            execute("ALTER TABLE #{quote_table_name(table_name)} ALTER COLUMN #{quote_column_name(column_name)} SET NOT NULL")
+            execute(<<~SQL.squish)
+              ALTER TABLE #{quote_table_name(table_name)}
+              ALTER COLUMN #{quote_column_name(column_name)} SET NOT NULL
+            SQL
           end
         end
 
         def rename_column(table_name, column_name, new_column_name)
-          execute("ALTER TABLE #{quote_table_name(table_name)} RENAME COLUMN #{quote_column_name(column_name)} TO #{quote_column_name(new_column_name)}")
+          execute(<<~SQL.squish)
+            ALTER TABLE #{quote_table_name(table_name)}
+            RENAME COLUMN #{quote_column_name(column_name)} TO #{quote_column_name(new_column_name)}
+          SQL
         end
 
         def change_column(table_name, column_name, type, **options)
           sql_type = type_to_sql(type, **options.slice(:limit, :precision, :scale))
-          execute("ALTER TABLE #{quote_table_name(table_name)} ALTER COLUMN #{quote_column_name(column_name)} SET DATA TYPE #{sql_type}")
+          execute(<<~SQL.squish)
+            ALTER TABLE #{quote_table_name(table_name)}
+            ALTER COLUMN #{quote_column_name(column_name)} SET DATA TYPE #{sql_type}
+          SQL
           change_column_default(table_name, column_name, options[:default]) if options.key?(:default)
           change_column_null(table_name, column_name, options[:null]) if options.key?(:null)
         end
@@ -96,15 +119,7 @@ module ActiveRecord
             AND constraint_type = 'FOREIGN KEY'
           SQL
 
-          result.map do |row|
-            constraint_name, columns, to_table, primary_keys = row
-            options = {
-              name: constraint_name,
-              column: columns.length == 1 ? columns.first : columns,
-              primary_key: primary_keys.length == 1 ? primary_keys.first : primary_keys
-            }
-            ForeignKeyDefinition.new(table_name.to_s, to_table, options)
-          end
+          result.map { |row| build_foreign_key(table_name, row) }
         end
 
         def schema_creation # :nodoc:
@@ -177,6 +192,16 @@ module ActiveRecord
           [schema, name]
         end
 
+        def build_foreign_key(table_name, row)
+          constraint_name, columns, to_table, primary_keys = row
+          options = {
+            name: constraint_name,
+            column: columns.length == 1 ? columns.first : columns,
+            primary_key: primary_keys.length == 1 ? primary_keys.first : primary_keys
+          }
+          ForeignKeyDefinition.new(table_name.to_s, to_table, options)
+        end
+
         def sequence_name_for(table_name, pk_name)
           "#{table_name}_#{pk_name}_seq"
         end
@@ -203,7 +228,11 @@ module ActiveRecord
 
           # Create new sequence starting after the last used value
           execute("CREATE SEQUENCE #{quote_table_name(new_seq)} START #{last_value + 1}")
-          execute("ALTER TABLE #{quote_table_name(new_table)} ALTER COLUMN #{quote_column_name(new_pk_name)} SET DEFAULT nextval('#{new_seq}')")
+          execute(<<~SQL.squish)
+            ALTER TABLE #{quote_table_name(new_table)}
+            ALTER COLUMN #{quote_column_name(new_pk_name)}
+            SET DEFAULT nextval('#{new_seq}')
+          SQL
           execute("DROP SEQUENCE #{quote_table_name(old_seq)}")
         end
       end

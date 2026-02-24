@@ -40,7 +40,9 @@ RSpec.describe ActiveRecord::ConnectionAdapters::DuckdbAdapter do
   describe "error translation" do
     before(:each) do
       @connection = ActiveRecord::Base.connection
-      @connection.execute("CREATE TABLE test_errors (id INTEGER PRIMARY KEY, email VARCHAR UNIQUE, name VARCHAR NOT NULL)")
+      @connection.execute(
+        "CREATE TABLE test_errors (id INTEGER PRIMARY KEY, email VARCHAR UNIQUE, name VARCHAR NOT NULL)"
+      )
     end
     after(:each) { @connection.execute("DROP TABLE IF EXISTS test_errors") }
 

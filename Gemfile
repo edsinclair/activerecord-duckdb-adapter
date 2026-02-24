@@ -4,9 +4,7 @@ source "https://rubygems.org"
 
 gemspec
 
-if ENV["ACTIVERECORD_VERSION"]
-  gem "activerecord", "~> #{ENV["ACTIVERECORD_VERSION"]}.0"
-end
+gem "activerecord", "~> #{ENV["ACTIVERECORD_VERSION"]}.0" if ENV["ACTIVERECORD_VERSION"]
 
 group :development, :test do
   gem "debug"

@@ -44,9 +44,7 @@ module ActiveRecord
         alias eql? ==
 
         def hash
-          Column.hash ^
-            super.hash ^
-            auto_increment?.hash
+          [Column, super, auto_increment?].hash
         end
       end
     end
