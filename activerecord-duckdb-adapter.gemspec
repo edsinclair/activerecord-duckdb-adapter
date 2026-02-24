@@ -35,6 +35,6 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "activerecord", "~> 8.0.4"
+  spec.add_dependency "activerecord", ">= 8.0", "< 9.0"
   spec.add_dependency("duckdb")
 end

@@ -1,21 +1,26 @@
-name: Ruby
+name: CI
 
 on:
   push:
     branches:
       - main
-
   pull_request:
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
-    name: Ruby ${{ matrix.ruby }}
+    name: Ruby ${{ matrix.ruby }} / AR ${{ matrix.activerecord }}
     strategy:
+      fail-fast: false
       matrix:
         ruby:
-          - '3.3.7'
-
+          - "3.3"
+          - "3.4"
+        activerecord:
+          - "8.0"
+          - "8.1"
+    env:
+      ACTIVERECORD_VERSION: ${{ matrix.activerecord }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Ruby
@@ -23,5 +28,7 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
-      - name: Run the default task
-        run: bundle exec rake
+      - name: Run specs
+        run: bundle exec rspec
+      - name: Run rubocop
+        run: bundle exec rubocop
