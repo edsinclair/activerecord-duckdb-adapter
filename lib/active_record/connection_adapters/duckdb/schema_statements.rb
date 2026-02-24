@@ -133,13 +133,7 @@ module ActiveRecord
             default_value = nil
           end
 
-          Duckdb::Column.new(
-            name,
-            default_value,
-            type_metadata,
-            !notnull,
-            default_function
-          )
+          Duckdb::Column.new(*column_args(name, type, default_value, type_metadata, !notnull, default_function))
         end
 
         def data_source_sql(name = nil, type: nil)
@@ -185,6 +179,17 @@ module ActiveRecord
 
         def sequence_name_for(table_name, pk_name)
           "#{table_name}_#{pk_name}_seq"
+        end
+
+        def column_args(name, type, default_value, type_metadata, null, default_function)
+          args = [name]
+          args << lookup_cast_type(type) if ar_81_or_later?
+          args.push(default_value, type_metadata, null, default_function)
+        end
+
+        def ar_81_or_later?
+          ActiveRecord::VERSION::MAJOR > 8 ||
+            (ActiveRecord::VERSION::MAJOR == 8 && ActiveRecord::VERSION::MINOR >= 1)
         end
 
         def rename_sequence(old_table, pk_name, new_table, new_pk_name)
